@@ -2,9 +2,9 @@
 
 Narayan reads your WhatsApp, finds the **real requests** buried in busy operational
 groups (work plans, tool/material deposits, electrical & procurement requirements, daily
-reports, approvals), and brings them to you on **Telegram** with a one-line summary, a
-priority, a due time, and a **ready-to-send draft reply**. You approve, snooze, or
-dismiss with a tap. It reminds you with morning and evening digests so nothing slips.
+reports, payments, approvals), and brings them to you on **Telegram** with a priority, a
+suggested owner, a due time, and a **ready-to-send draft reply**. You approve, edit,
+snooze, or dismiss with a tap. A morning **Daily Brief** plus digests mean nothing slips.
 
 ```
   WhatsApp (your number)
@@ -13,18 +13,35 @@ dismiss with a tap. It reminds you with morning and evening digests so nothing s
    Listener ──► SQLite store ──► Obsidian vault (optional .md export)
         │            │
         │            ▼
-        │       Claude analyzer  (extract action-items, deadlines, draft replies)
+        │     Triage (Sonnet 4.6) ──► Draft (Opus 4.8)   ◄── knowledge.md + decision memory
         │            │
         ▼            ▼
-  (Phase 2 send) ◄── Telegram bot ──► YOU (reminders, digests, Approve/Snooze/Dismiss)
+  (later: send) ◄── Telegram bot ──► YOU (Daily Brief, digests, Approve/Edit/Snooze/Dismiss)
                        ▲
-                 cron scheduler (morning + evening digests, snooze reminders)
+                 cron scheduler (09:30 brief, morning/evening digests, snooze reminders)
 ```
 
-**Phase 1 (this version) is read / draft-only — Narayan never sends anything to WhatsApp
-on its own.** It reads, analyzes, reminds, and drafts; you copy the approved reply and
-send it yourself. This keeps the WhatsApp ban risk low. Phase 2 will optionally wire the
-"Approve" button to an automatic, rate-limited send.
+**Read / draft-only — Narayan never sends anything to WhatsApp on its own.** It reads,
+analyzes, reminds, and drafts; you copy the approved reply and send it yourself. This keeps
+the WhatsApp ban risk low. A later phase will optionally wire "Approve" to an automatic,
+rate-limited send.
+
+### What's new (chief-of-staff upgrade)
+
+- **P1 / P2 / P3 routing** — P1 (money, Vedanta, safety, legal, contract, diesel, PO
+  exhaustion, breakdown) alerts you instantly; P2 (procurement, tools, reports, work plans)
+  waits for the digest; P3 (greetings, quotes, FYI) is auto-archived and never pings you.
+- **Expected Owner** — each item suggests who should action it (Procurement, Store, Finance…).
+- **Daily MD Brief** at 09:30 — Critical / Due Today / Awaiting Your Decision / Risks.
+- **Decision Memory** — Approve or ✏️ Edit a reply; Narayan stores your final wording and
+  uses recent approvals as examples so drafts start sounding like you.
+- **Knowledge file** (`knowledge.md`) — personnel, projects, disputes, fleet, receivables,
+  injected into analysis so drafts and the brief are grounded in your operation.
+- **Confidence score** — anything the model is unsure about (< 0.75) is flagged
+  **⚠ Needs Review** instead of being trusted silently, and is never auto-archived.
+- **Model tiering** — cheap/fast **Sonnet 4.6** triages every batch; capable **Opus 4.8**
+  drafts the few replies that matter. (Switch the draft tier to `claude-fable-5` once it is
+  available — it's one config value.)
 
 ---
 
@@ -81,12 +98,15 @@ After pairing, the session is saved under `auth_state/` and you won't need to sc
 
 ## Using it (on Telegram)
 
-Narayan messages you when it finds a request. Each card shows the group, who asked, the
-ask, a due time if any, and a suggested reply, with buttons:
+Narayan messages you for P1 items (and anything flagged ⚠ Needs Review) the moment it finds
+them. Each card shows the group, who asked, the **suggested owner**, a due time, and a draft
+reply, with buttons:
 
-- **✅ Approve** — marks it handled and sends you the reply text to copy into WhatsApp.
+- **✅ Approve** — records your decision and sends you the reply text to copy into WhatsApp.
+- **✏️ Edit** — reply with your own wording; Narayan saves *your* version (this is how it
+  learns your style over time).
 - **⏰ Snooze 2h** — reminds you again in 2 hours.
-- **✔️ Done** / **🗑 Dismiss** — clear it.
+- **🗑 Dismiss** — clear it.
 
 Commands:
 
@@ -94,8 +114,8 @@ Commands:
 - `/today` — items due today.
 - `/digest` — a summary of everything open.
 
-You also get an automatic **morning digest** and **evening digest** (times set in
-`config.json`).
+You also get the **Daily MD Brief** at 09:30 (Critical / Due Today / Awaiting Your Decision /
+Risks) plus a **morning** and **evening digest** (times in `config.json`).
 
 ## Configuration reference
 
@@ -105,46 +125,56 @@ You also get an automatic **morning digest** and **evening digest** (times set i
 |-------|---------|
 | `timezone` | IANA timezone for digests and due times (e.g. `Asia/Kolkata`). |
 | `ownerName` | Your name, used in drafts. |
-| `persona` | System prompt describing you and your domain — tune this for accuracy. |
-| `reminderTimes.morningDigest` / `eveningDigest` | `"HH:MM"` digest times. |
-| `highPriorityKeywords` | Words that bump an item to high priority. |
+| `persona` | System prompt describing you and your domain — tune for accuracy. |
+| `reminderTimes.dailyBrief` / `morningDigest` / `eveningDigest` | `"HH:MM"` times. |
+| `priorityBands.p1` / `p2` / `p3` | Keyword hints that steer triage into each band. |
+| `delegationTargets` | Teams/people Narayan may suggest as the owner. |
+| `reviewThreshold` | Below this confidence (0–1) an item is flagged ⚠ Needs Review. |
 | `monitoredChats` | List of `{ "match": "<substring of chat name>" }` to watch. |
 | `monitorAllChats` | If `true`, watch every chat (ignores the allow-list). |
 
-`.env` (see `.env.example`): `ANTHROPIC_API_KEY`, `NARAYAN_MODEL` (default
-`claude-opus-4-8`), `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `AUTH_DIR`, `DB_PATH`,
-`CONFIG_PATH`, and optional `OBSIDIAN_VAULT_PATH`.
+`.env` (see `.env.example`): `ANTHROPIC_API_KEY`, `CLASSIFY_MODEL` (default
+`claude-sonnet-4-6`), `DRAFT_MODEL` (default `claude-opus-4-8`; set `claude-fable-5` when
+available), `CLASSIFY_EFFORT` / `DRAFT_EFFORT` / `BRIEF_EFFORT`, `TELEGRAM_BOT_TOKEN`,
+`TELEGRAM_CHAT_ID`, `AUTH_DIR`, `DB_PATH`, `CONFIG_PATH`, and optional `OBSIDIAN_VAULT_PATH`
+and `KNOWLEDGE_PATH`.
+
+### Knowledge base
+
+Copy `knowledge.example.md` to `knowledge.md` and set `KNOWLEDGE_PATH=./knowledge.md`. Fill in
+PERSONNEL / PROJECTS / DISPUTES / FLEET / RECEIVABLES; Narayan injects it into triage, drafts,
+and the daily brief so they're grounded in your operation. A tight markdown file beats a
+vector database at this scale.
 
 ### Optional: Obsidian export
 
-Set `OBSIDIAN_VAULT_PATH` in `.env` to an absolute path to your Obsidian vault. Narayan
-will append each new request as a checkbox item to a dated daily note under a `Narayan/`
-folder in the vault. Leave it empty to disable.
+Set `OBSIDIAN_VAULT_PATH` to your vault folder. Narayan appends each new request to a dated
+daily note under `Narayan/`. Leave empty to disable.
 
 ## Project layout
 
 ```
 src/
-  index.ts            # boots WhatsApp, scheduler, Telegram bot, analysis loop
-  config.ts           # env + config.json loader, chat allow-list matching
+  index.ts            # boots WhatsApp, scheduler, Telegram bot; routes P1/P2/P3
+  config.ts           # env + config.json loader, allow-list, priority bands
   whatsapp/           # Baileys client, message ingestion, normalization
-  store/              # SQLite schema + messages/action-items/drafts/reminders
-  analyze/            # Claude classification + extraction, due-date parsing, prompts
-  notify/             # Telegram bot (buttons/commands) + cron reminders + formatting
+  store/              # SQLite: messages, action-items, drafts, reminders, decisions
+  analyze/            # triage + draft (two-stage), prompts, knowledge loader, due-date
+  notify/             # Telegram bot, daily brief, cron reminders, formatting
   obsidian/           # optional markdown vault export
   util/               # small time helpers
 ```
 
 ## Data & privacy
 
-Everything stays **local**: messages and action items live in a SQLite file (`DB_PATH`),
-WhatsApp auth in `auth_state/`, secrets in `.env`. All of these are gitignored and never
-committed. Only message **text** from monitored chats is sent to the Anthropic API for
-analysis.
+Everything stays **local**: messages, action items, and your decision history live in a
+SQLite file (`DB_PATH`); WhatsApp auth in `auth_state/`; secrets in `.env`; your facts in
+`knowledge.md`. All gitignored. Only message **text** from monitored chats (and your
+knowledge file) is sent to the Anthropic API for analysis.
 
-## Roadmap (Phase 2)
+## Roadmap (next)
 
+- **Phase 3:** Risk Score (0–100, brief sorts Risks by score), Calendar, Email into one
+  unified queue, voice-note transcription.
 - Wire **Approve** to an automatic, rate-limited WhatsApp send (opt-in).
-- Optional ChatGPT "second opinion" audit pass on drafts before you approve.
 - Deploy to an always-on VPS with a process manager (pm2 / systemd).
-- Per-chat mute/priority rules and richer scheduling.

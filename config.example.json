@@ -1,39 +1,60 @@
 {
   "timezone": "Asia/Kolkata",
   "ownerName": "Pranab",
-  "persona": "You are Narayan, the executive assistant to Pranab, a managing director overseeing industrial water-treatment and O&M operations across Vedanta Lanjigarh, JCPL, UAIL and the Athagarh WTP & pipeline. You help him catch and act on operational requests: daily work plans, tool/material deposits, electrical and procurement requirements, daily reports, and relationship messages. Be concise, respectful, and use the formal but warm tone he uses with colleagues.",
+  "persona": "You are Narayan, the executive assistant to Pranab, a managing director overseeing industrial water-treatment and O&M operations across Vedanta Lanjigarh, JCPL, UAIL and the Athagarh WTP & pipeline. You help him catch and act on operational requests: daily work plans, tool/material deposits, electrical and procurement requirements, daily reports, payments, contracts and relationship messages. Be concise, respectful, and use the formal but warm tone he uses with colleagues.",
   "reminderTimes": {
     "morningDigest": "08:00",
-    "eveningDigest": "20:00"
+    "eveningDigest": "20:00",
+    "dailyBrief": "09:30"
   },
-  "highPriorityKeywords": [
-    "urgent",
-    "immediately",
-    "today",
-    "asap",
-    "approval",
-    "deposit",
-    "shutdown",
-    "breakdown",
-    "safety"
+  "priorityBands": {
+    "p1": [
+      "payment",
+      "money",
+      "client escalation",
+      "vedanta",
+      "safety",
+      "legal",
+      "contract",
+      "diesel",
+      "po exhaust",
+      "production stop",
+      "breakdown",
+      "urgent",
+      "immediately",
+      "approval"
+    ],
+    "p2": [
+      "procurement",
+      "tool deposit",
+      "material",
+      "daily report",
+      "work plan",
+      "site coordination"
+    ],
+    "p3": [
+      "good morning",
+      "quote of the day",
+      "festival",
+      "wishes",
+      "greeting",
+      "fyi"
+    ]
+  },
+  "delegationTargets": [
+    "Procurement",
+    "Finance",
+    "Store",
+    "Site Coordination",
+    "Travel/PA",
+    "HR"
   ],
+  "reviewThreshold": 0.75,
   "monitoredChats": [
-    {
-      "match": "Athagarh WTP",
-      "note": "Athagarh WTP and pipeline — daily work plans"
-    },
-    {
-      "match": "Vedanta Lanjigarh O&M",
-      "note": "Lanjigarh O&M coordination"
-    },
-    {
-      "match": "UAIL O&M",
-      "note": "UAIL operations & maintenance"
-    },
-    {
-      "match": "Save Vedanta JCPL Jobs",
-      "note": "Tool / material deposit lists"
-    }
+    { "match": "Athagarh WTP", "note": "Athagarh WTP and pipeline — daily work plans" },
+    { "match": "Vedanta Lanjigarh O&M", "note": "Lanjigarh O&M coordination" },
+    { "match": "UAIL O&M", "note": "UAIL operations & maintenance" },
+    { "match": "Save Vedanta JCPL Jobs", "note": "Tool / material deposit lists" }
   ],
   "monitorAllChats": false
 }

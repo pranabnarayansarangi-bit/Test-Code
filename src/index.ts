@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import cron from 'node-cron';
 import { loadEnv, loadConfig } from './config';
 import { getDb } from './store/db';
-import { getAction, getUnnotifiedOpen } from './store/actions';
+import { markNotified } from './store/actions';
 import { connectWhatsApp } from './whatsapp/client';
 import { attachIngest } from './whatsapp/ingest';
 import { analyzePending } from './analyze/extractor';
@@ -13,9 +13,11 @@ import { ObsidianExporter } from './obsidian/vault';
 /**
  * Narayan entrypoint.
  *
- *   WhatsApp (Baileys) -> SQLite -> Claude analysis -> Telegram reminders/drafts
+ *   WhatsApp (Baileys) -> SQLite -> triage (Sonnet) -> draft (Opus) -> Telegram
  *
- * Phase 1 is read/draft-only: nothing is sent back to WhatsApp automatically.
+ * Read/draft-only: nothing is sent back to WhatsApp automatically.
+ * Routing: P1 (or anything flagged for review) is pushed instantly; P2 waits for the
+ * digest; P3 is archived and only logged to Obsidian.
  */
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -23,13 +25,12 @@ async function main(): Promise<void> {
   const db = getDb(env.dbPath);
 
   const anthropic = new Anthropic({ apiKey: env.anthropicApiKey });
-  const notifier = new TelegramNotifier(db, env);
+  const notifier = new TelegramNotifier(db, env, config);
   const obsidian = new ObsidianExporter(db, env.obsidianVaultPath);
 
   await notifier.launch();
-  startScheduler(db, config, notifier);
+  startScheduler(db, env, config, notifier, anthropic);
 
-  // Connect WhatsApp and start ingesting monitored chats.
   const { ready } = await connectWhatsApp(env.authDir, (sock) => {
     attachIngest(sock, db, config);
   });
@@ -39,20 +40,17 @@ async function main(): Promise<void> {
     console.log(`[obsidian] export enabled -> ${env.obsidianVaultPath}`);
   }
 
-  // Analysis loop: every minute, classify new messages and push fresh action items.
+  // Analysis loop: every minute, triage new messages, draft the ones that matter, route.
   const runAnalysis = async () => {
     try {
-      const { newActionIds } = await analyzePending(db, env, config, anthropic);
-      for (const id of newActionIds) {
-        const item = getAction(db, id);
-        if (!item) continue;
+      const { routed } = await analyzePending(db, env, config, anthropic);
+      for (const { item, push } of routed) {
         obsidian.appendActionItem(item);
-        await notifier.sendActionCard(item);
-      }
-      // Safety net: push any open item that somehow wasn't notified yet.
-      for (const item of getUnnotifiedOpen(db)) {
-        obsidian.appendActionItem(item);
-        await notifier.sendActionCard(item);
+        if (push) {
+          await notifier.sendActionCard(item); // P1 / needs-review → alert now
+        } else {
+          markNotified(db, item.id); // P2 → digest only (don't instant-push)
+        }
       }
     } catch (err) {
       console.error('[analysis loop] error:', err);
@@ -60,8 +58,7 @@ async function main(): Promise<void> {
   };
 
   cron.schedule('* * * * *', runAnalysis);
-  // Kick once shortly after startup so the owner sees activity quickly.
-  setTimeout(runAnalysis, 5000);
+  setTimeout(runAnalysis, 5000); // kick once shortly after startup
 
   console.log('[narayan] running. Press Ctrl+C to stop.');
 }

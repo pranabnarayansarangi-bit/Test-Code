@@ -15,7 +15,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.32.1",
+    "@anthropic-ai/sdk": "^0.105.0",
     "@whiskeysockets/baileys": "^6.7.0",
     "better-sqlite3": "^11.5.0",
     "dotenv": "^16.4.5",

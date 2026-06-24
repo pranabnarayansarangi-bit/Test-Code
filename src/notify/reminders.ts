@@ -1,20 +1,34 @@
 import cron from 'node-cron';
+import Anthropic from '@anthropic-ai/sdk';
 import { DB } from '../store/db';
-import { NarayanConfig } from '../config';
+import { Env, NarayanConfig } from '../config';
 import { getOpenItems, getItemsDueBetween, popDueReminders } from '../store/actions';
 import { TelegramNotifier } from './telegram';
 import { formatDigest } from './format';
+import { buildDailyBrief } from './brief';
 import { dayBoundsSec, cronFromHHMM } from '../util/time';
 
 /**
- * Schedule recurring digests and a frequent check for due snoozed reminders.
+ * Schedule the daily brief, recurring digests, and a frequent check for due snoozed reminders.
  */
 export function startScheduler(
   db: DB,
+  env: Env,
   config: NarayanConfig,
   notifier: TelegramNotifier,
+  client: Anthropic,
 ): void {
   const tzOpt = { timezone: config.timezone };
+
+  // "NARAYAN DAILY" chief-of-staff brief.
+  cron.schedule(
+    cronFromHHMM(config.reminderTimes.dailyBrief),
+    async () => {
+      const brief = await buildDailyBrief(db, env, config, client);
+      await notifier.sendMessage(brief);
+    },
+    tzOpt,
+  );
 
   // Morning digest: today's due items + everything still open.
   cron.schedule(
@@ -22,9 +36,11 @@ export function startScheduler(
     async () => {
       const { start, end } = dayBoundsSec(new Date());
       const dueToday = getItemsDueBetween(db, start, end);
-      await notifier.sendMessage(formatDigest(db, dueToday, '☀️ Morning digest — due today'));
+      await notifier.sendMessage(
+        formatDigest(db, dueToday, '☀️ Morning digest — due today', config),
+      );
       const open = getOpenItems(db);
-      await notifier.sendMessage(formatDigest(db, open, '📋 All open requests'));
+      await notifier.sendMessage(formatDigest(db, open, '📋 All open requests', config));
     },
     tzOpt,
   );
@@ -34,7 +50,7 @@ export function startScheduler(
     cronFromHHMM(config.reminderTimes.eveningDigest),
     async () => {
       const open = getOpenItems(db);
-      await notifier.sendMessage(formatDigest(db, open, '🌙 Evening digest — still open'));
+      await notifier.sendMessage(formatDigest(db, open, '🌙 Evening digest — still open', config));
     },
     tzOpt,
   );
@@ -50,6 +66,6 @@ export function startScheduler(
   });
 
   console.log(
-    `[reminders] scheduled morning ${config.reminderTimes.morningDigest}, evening ${config.reminderTimes.eveningDigest} (${config.timezone}).`,
+    `[reminders] scheduled brief ${config.reminderTimes.dailyBrief}, morning ${config.reminderTimes.morningDigest}, evening ${config.reminderTimes.eveningDigest} (${config.timezone}).`,
   );
 }

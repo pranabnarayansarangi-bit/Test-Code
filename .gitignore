@@ -9,8 +9,9 @@ dist/
 auth_state/
 auth/
 
-# Local config and database
+# Local config, knowledge base, and database
 config.json
+knowledge.md
 data/
 *.sqlite
 *.sqlite3
