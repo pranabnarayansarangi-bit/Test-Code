@@ -46,6 +46,9 @@ export async function connectWhatsApp(
     logger,
     printQRInTerminal: false,
     markOnlineOnConnect: false, // less intrusive; avoids hijacking phone presence
+    connectTimeoutMs: 90_000,  // default 20s is too short after 515 reconnect
+    keepAliveIntervalMs: 30_000,
+    syncFullHistory: false,    // skip heavy initial history sync — avoids fetchProps timeout
   });
 
   sock.ev.on('creds.update', saveCreds);
@@ -75,7 +78,7 @@ export async function connectWhatsApp(
           connectWhatsApp(authDir, onSocket).catch((e) =>
             console.error('[whatsapp] reconnect failed:', e),
           );
-        }, 3000);
+        }, 5000);
       }
     }
   });
