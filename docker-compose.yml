@@ -1,0 +1,29 @@
+services:
+  narayan:
+    build: .
+    container_name: narayan
+    restart: unless-stopped
+    # Your three secrets live in .env (gitignored).
+    env_file:
+      - .env
+    environment:
+      # Pin paths to the mounted volumes inside the container.
+      - AUTH_DIR=/app/auth_state
+      - DB_PATH=/app/data/narayan.db
+      - CONFIG_PATH=/app/config.json
+      - KNOWLEDGE_PATH=/app/knowledge.md
+    volumes:
+      # WhatsApp session + database persist across restarts.
+      - narayan_auth:/app/auth_state
+      - narayan_data:/app/data
+      # Your config + knowledge base, edited on the host.
+      - ./config.json:/app/config.json:ro
+      - ./knowledge.md:/app/knowledge.md:ro
+    # The WhatsApp pairing QR prints to stdout on first run:
+    #   docker compose logs -f narayan
+    stdin_open: true
+    tty: true
+
+volumes:
+  narayan_auth:
+  narayan_data:

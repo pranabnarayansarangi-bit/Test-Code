@@ -1,0 +1,38 @@
+{
+  "name": "narayan",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Narayan — a personal WhatsApp executive assistant: reads your WhatsApp, extracts action-items, reminds you, and drafts replies you approve via Telegram.",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "status": "node dist/cli/status.js",
+    "status:dev": "ts-node src/cli/status.ts",
+    "setup": "bash scripts/setup.sh",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
+    "@whiskeysockets/baileys": "^6.7.0",
+    "better-sqlite3": "^11.5.0",
+    "dotenv": "^16.4.5",
+    "node-cron": "^3.0.3",
+    "pino": "^9.5.0",
+    "qrcode-terminal": "^0.12.0",
+    "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.9.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/qrcode-terminal": "^0.12.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}

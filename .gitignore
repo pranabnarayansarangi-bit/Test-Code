@@ -1,0 +1,22 @@
+node_modules/
+dist/
+logs/
+*.log
+
+# Secrets — never commit
+.env
+
+# WhatsApp auth state (links to your number — keep private)
+auth_state/
+auth/
+
+# Local config, knowledge base, and database
+config.json
+knowledge.md
+data/
+*.sqlite
+*.sqlite3
+*.db
+
+# Obsidian export target (if pointed inside the repo)
+vault/
