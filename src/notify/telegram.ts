@@ -193,4 +193,21 @@ export class TelegramNotifier {
     process.once('SIGTERM', () => this.bot.stop('SIGTERM'));
     console.log('[telegram] bot launched.');
   }
+
+  /** Send a boot confirmation so the owner knows Narayan is online and Telegram is wired up. */
+  async notifyOnline(monitoredCount: number): Promise<void> {
+    const msg =
+      `<b>Narayan is online ✅</b>\n\n` +
+      `WhatsApp linked and listening to <b>${monitoredCount}</b> group(s).\n` +
+      `P1 items arrive here instantly. P2 waits for the digest.\n\n` +
+      `Commands: /pending · /today · /digest`;
+    await this.bot.telegram
+      .sendMessage(this.ownerChatId, msg, { parse_mode: 'HTML' })
+      .catch((e) =>
+        console.error(
+          '[telegram] startup ping failed — did you press Start on the bot?',
+          e.message,
+        ),
+      );
+  }
 }

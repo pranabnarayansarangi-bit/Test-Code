@@ -36,6 +36,12 @@ async function main(): Promise<void> {
   });
   await ready;
 
+  // Tell the owner we're up — this also confirms Telegram is wired correctly.
+  const monitoredCount = config.monitorAllChats
+    ? 0
+    : config.monitoredChats.length;
+  await notifier.notifyOnline(monitoredCount);
+
   if (obsidian.enabled) {
     console.log(`[obsidian] export enabled -> ${env.obsidianVaultPath}`);
   }
