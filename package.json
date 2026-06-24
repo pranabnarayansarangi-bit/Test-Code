@@ -9,6 +9,9 @@
     "build": "tsc",
     "dev": "ts-node src/index.ts",
     "start": "node dist/index.js",
+    "status": "node dist/cli/status.js",
+    "status:dev": "ts-node src/cli/status.ts",
+    "setup": "bash scripts/setup.sh",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

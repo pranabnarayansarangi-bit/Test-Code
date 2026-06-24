@@ -96,6 +96,10 @@ On first run Narayan prints a **QR code** in the terminal. On your phone:
 **WhatsApp → Settings → Linked Devices → Link a Device → scan the QR.**
 After pairing, the session is saved under `auth_state/` and you won't need to scan again.
 
+> **Deploying for real (always-on)?** See **[DEPLOY.md](./DEPLOY.md)** for one-command Docker,
+> pm2, and systemd setups, plus how to watch it work. A quick `bash scripts/setup.sh` seeds
+> your config files, installs, and builds in one go.
+
 ## Using it (on Telegram)
 
 Narayan messages you for P1 items (and anything flagged ⚠ Needs Review) the moment it finds

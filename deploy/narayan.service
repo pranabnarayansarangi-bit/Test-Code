@@ -1,0 +1,23 @@
+# systemd unit for an always-on Linux VPS (no Docker).
+#   1. Edit the two <...> placeholders below.
+#   2. sudo cp deploy/narayan.service /etc/systemd/system/narayan.service
+#   3. sudo systemctl daemon-reload && sudo systemctl enable --now narayan
+#   4. First run only — pair WhatsApp by reading the QR from the logs:
+#        journalctl -u narayan -f
+[Unit]
+Description=Narayan WhatsApp executive assistant
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=<your-linux-user>
+WorkingDirectory=<absolute-path-to-Test-Code>
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+# Secrets are read from the .env file in WorkingDirectory via dotenv.
+
+[Install]
+WantedBy=multi-user.target
