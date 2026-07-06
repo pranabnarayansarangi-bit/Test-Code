@@ -1,0 +1,57 @@
+.graph-declutter-modal {
+	max-width: 760px;
+}
+
+.graph-declutter-controls {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 8px;
+}
+
+.graph-declutter-count {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.graph-declutter-list {
+	max-height: 45vh;
+	overflow-y: auto;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 4px;
+	margin-bottom: 12px;
+}
+
+.graph-declutter-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 6px 8px;
+	border-radius: 4px;
+}
+
+.graph-declutter-row:hover {
+	background: var(--background-modifier-hover);
+}
+
+.graph-declutter-row input[type="checkbox"] {
+	margin-top: 3px;
+}
+
+.graph-declutter-title {
+	font-weight: 600;
+	word-break: break-word;
+}
+
+.graph-declutter-detail {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	word-break: break-word;
+}
+
+.graph-declutter-textarea {
+	width: 100%;
+	font-family: var(--font-monospace);
+}

@@ -1,0 +1,10 @@
+{
+	"id": "graph-declutter",
+	"name": "Graph Declutter",
+	"version": "1.0.0",
+	"minAppVersion": "1.4.0",
+	"description": "Remove clutter and spam notes (nodes) from your vault and discover missing links (edges) between related notes.",
+	"author": "Pranab Narayan Sarangi",
+	"authorUrl": "https://github.com/pranabnarayansarangi-bit/test-code",
+	"isDesktopOnly": false
+}
