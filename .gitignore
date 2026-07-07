@@ -2,3 +2,6 @@ node_modules/
 main.js
 *.js.map
 .DS_Store
+# Employee payroll vault: contains PII. Temporarily ignored until the repository
+# is switched to PRIVATE, then this entry will be removed and the vault committed.
+vault/

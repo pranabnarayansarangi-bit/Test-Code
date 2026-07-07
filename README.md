@@ -15,7 +15,7 @@ Scans the vault and flags notes that are:
 
 - **empty** — no body content (frontmatter only)
 - **stubs** — fewer than *N* words (configurable)
-- **orphans** — no incoming *and* no outgoing links (off by default)
+- **orphans** — no incoming *and* no outgoing links
 - **spam** — matches your regex patterns (case-insensitive)
 - **link farms** — mostly external links with little text
 
@@ -25,9 +25,17 @@ Obsidian's link-aware rename, so inbound links are updated rather than broken.
 
 ### 2. Find missing links (edges)
 Scans every note for plain-text mentions of another note's **title or alias**
-that aren't yet linked, and proposes turning the first mention into a
-`[[wikilink]]`. Code blocks, existing links, and URLs are never touched. You
-review each proposed edge with context and choose which to insert.
+that aren't yet linked, and proposes an edge for each. Code blocks, existing
+links, and URLs are never touched, and notes that already link to a target are
+skipped. You review each proposed edge with context and choose which to insert.
+
+Two insertion modes (configurable):
+
+- **Inline** (default) — the first plain-text mention becomes a `[[wikilink]]`
+  in place, preserving your prose (`[[Note|mention]]` when the casing differs).
+- **Related-notes section** — prose is left untouched; accepted links are
+  appended as bullets under a `## Related notes` heading (configurable) at the
+  bottom of the note, created if missing.
 
 ## Commands
 
@@ -58,6 +66,7 @@ To try it in a vault, copy `main.js`, `manifest.json`, and `styles.css` into
 ## Safety notes
 
 - The declutter action **moves** notes to a trash folder; it never deletes them.
-- Orphan flagging is **off by default** because orphans are frequently intentional.
+- Every flagged note is reviewed in a checkbox modal first — untick anything
+  you want to keep (or protect it permanently with a `keep` tag).
 - Edge discovery adds **one** link per note pair (the first mention) to avoid
   re-cluttering, and skips code, URLs, and existing links.

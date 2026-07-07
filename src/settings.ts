@@ -1,3 +1,5 @@
+export type LinkInsertMode = "inline" | "section";
+
 export interface GraphDeclutterSettings {
 	/** Folder that flagged clutter/spam notes are moved into (never deleted). */
 	trashFolder: string;
@@ -38,6 +40,15 @@ export interface GraphDeclutterSettings {
 	linkMaxPerNote: number;
 	/** Also match a note's frontmatter aliases, not just its title. */
 	linkUseAliases: boolean;
+	/**
+	 * How accepted edges are written:
+	 * - "inline": turn the first plain-text mention into a [[wikilink]] in place.
+	 * - "section": leave prose untouched and append the link to a "Related notes"
+	 *   section at the bottom of the note.
+	 */
+	linkInsertMode: LinkInsertMode;
+	/** Heading used for the appended section in "section" mode. */
+	relatedSectionHeading: string;
 }
 
 export const DEFAULT_SETTINGS: GraphDeclutterSettings = {
@@ -46,7 +57,7 @@ export const DEFAULT_SETTINGS: GraphDeclutterSettings = {
 	flagEmpty: true,
 	flagStubs: true,
 	stubMinWords: 5,
-	flagOrphans: false,
+	flagOrphans: true,
 
 	flagSpam: true,
 	spamPatterns: [
@@ -64,4 +75,6 @@ export const DEFAULT_SETTINGS: GraphDeclutterSettings = {
 	linkCaseSensitive: false,
 	linkMaxPerNote: 20,
 	linkUseAliases: true,
+	linkInsertMode: "inline",
+	relatedSectionHeading: "Related notes",
 };
