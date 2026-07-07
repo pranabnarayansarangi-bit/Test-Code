@@ -4,6 +4,7 @@ import {
 	escapeRegExp,
 	computeProtectedRanges,
 	overlapsAny,
+	appendToSection,
 	Range,
 } from "./textUtils";
 
@@ -86,6 +87,18 @@ export class LinkEngine {
 	}
 
 	/** Compute the ordered set of edits for a single note (used by scan + apply). */
+	/** Lower-cased basenames of notes this file already links to (wikilinks). */
+	private existingLinkTargets(file: TFile): Set<string> {
+		const existing = new Set<string>();
+		const cache = this.app.metadataCache.getFileCache(file);
+		for (const l of cache?.links ?? []) {
+			const raw = l.link.split("#")[0].trim();
+			const base = raw.split("/").pop();
+			if (base) existing.add(base.toLowerCase());
+		}
+		return existing;
+	}
+
 	private planForNote(
 		file: TFile,
 		content: string,
@@ -95,12 +108,14 @@ export class LinkEngine {
 		const claimed: Range[] = [...protectedRanges];
 		const edits: (EdgeSuggestion & { start: number; end: number; replacement: string })[] = [];
 		const linkedTargets = new Set<string>(); // one edge per (note, target) pair
+		const alreadyLinked = this.existingLinkTargets(file); // don't re-suggest existing edges
 		const cap = this.settings.linkMaxPerNote;
 
 		for (const t of targets) {
 			if (t.file.path === file.path) continue; // never self-link
 			if (t.target === file.basename) continue; // alias of self
 			if (linkedTargets.has(t.target)) continue;
+			if (alreadyLinked.has(t.target.toLowerCase())) continue; // edge exists
 			if (cap > 0 && edits.length >= cap) break;
 
 			const re = this.buildMatcher(t.match);
@@ -144,18 +159,26 @@ export class LinkEngine {
 		return `${clip(before, 40, true)}**${matched}**${clip(after, 40)}`.trim();
 	}
 
-	/**
-	 * Apply the given suggestions. Suggestions are grouped by note; within each
-	 * note the plan is recomputed against current content so offsets stay valid,
-	 * and only the accepted (file, target) pairs are inserted.
-	 */
-	async apply(accepted: EdgeSuggestion[]): Promise<{ applied: number; notes: number }> {
+	private groupByPath(accepted: EdgeSuggestion[]): Map<string, EdgeSuggestion[]> {
 		const byPath = new Map<string, EdgeSuggestion[]>();
 		for (const s of accepted) {
 			const list = byPath.get(s.file.path) ?? [];
 			list.push(s);
 			byPath.set(s.file.path, list);
 		}
+		return byPath;
+	}
+
+	/**
+	 * Apply the given suggestions. In "inline" mode the first plain-text mention
+	 * becomes a [[wikilink]] in place; in "section" mode prose is left untouched
+	 * and links are appended to a "Related notes" section at the note's bottom.
+	 */
+	async apply(accepted: EdgeSuggestion[]): Promise<{ applied: number; notes: number }> {
+		if (this.settings.linkInsertMode === "section") {
+			return this.applyToSection(accepted);
+		}
+		const byPath = this.groupByPath(accepted);
 
 		const targets = this.buildTargets();
 		let applied = 0;
@@ -180,6 +203,44 @@ export class LinkEngine {
 				applied++;
 			}
 			await this.app.vault.modify(file, next);
+			notes++;
+		}
+		return { applied, notes };
+	}
+
+	/**
+	 * "Section" mode: append `- [[target]]` bullets to the configured heading
+	 * (created at the bottom of the note when missing). Targets the note already
+	 * links to anywhere are skipped, so re-running converges.
+	 */
+	private async applyToSection(
+		accepted: EdgeSuggestion[]
+	): Promise<{ applied: number; notes: number }> {
+		const heading = this.settings.relatedSectionHeading.trim() || "Related notes";
+		let applied = 0;
+		let notes = 0;
+
+		for (const [path, group] of this.groupByPath(accepted)) {
+			const file = this.app.vault.getAbstractFileByPath(normalizePath(path));
+			if (!(file instanceof TFile)) continue;
+
+			const content = await this.app.vault.read(file);
+
+			// Skip targets already wikilinked anywhere in the note.
+			const existing = new Set<string>();
+			for (const m of content.matchAll(/\[\[([^\]|#]+)[^\]]*\]\]/g)) {
+				const base = m[1].trim().split("/").pop();
+				if (base) existing.add(base.toLowerCase());
+			}
+			const toAdd = [...new Set(group.map((s) => s.target))].filter(
+				(t) => !existing.has(t.toLowerCase())
+			);
+			if (toAdd.length === 0) continue;
+			const bullets = toAdd.map((t) => `- [[${t}]]`).join("\n");
+			const next = appendToSection(content, heading, bullets);
+
+			await this.app.vault.modify(file, next);
+			applied += toAdd.length;
 			notes++;
 		}
 		return { applied, notes };

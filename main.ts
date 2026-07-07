@@ -83,10 +83,13 @@ export default class GraphDeclutterPlugin extends Plugin {
 			checked: true,
 		}));
 
+		const sectionMode = this.settings.linkInsertMode === "section";
 		new ReportModal(this.app, {
 			heading: "Missing links (edges)",
 			emptyText: "No missing links found.",
-			actionLabel: "Insert selected links",
+			actionLabel: sectionMode
+				? `Add selected to "${this.settings.relatedSectionHeading}" sections`
+				: "Insert selected links inline",
 			items,
 			onConfirm: async (indices) => {
 				const accepted = indices.map((i) => suggestions[i]).filter(Boolean);

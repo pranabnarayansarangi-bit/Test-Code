@@ -74,7 +74,7 @@ export class GraphDeclutterSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Flag orphan notes")
-			.setDesc("Notes with no incoming and no outgoing links. Off by default — orphans are often intentional.")
+			.setDesc("Notes with no incoming and no outgoing links. Disable if your orphans are intentional.")
 			.addToggle((t) =>
 				t.setValue(s.flagOrphans).onChange(async (v) => {
 					s.flagOrphans = v;
@@ -154,6 +154,36 @@ export class GraphDeclutterSettingTab extends PluginSettingTab {
 			});
 
 		containerEl.createEl("h3", { text: "Edge discovery" });
+
+		new Setting(containerEl)
+			.setName("Link insertion mode")
+			.setDesc(
+				"Inline: turn the first mention into a [[wikilink]] in place. " +
+					"Related-notes section: leave prose untouched and append links under a heading."
+			)
+			.addDropdown((d) =>
+				d
+					.addOption("inline", "Inline wikilinks")
+					.addOption("section", "Related-notes section")
+					.setValue(s.linkInsertMode)
+					.onChange(async (v) => {
+						s.linkInsertMode = v === "section" ? "section" : "inline";
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Related section heading")
+			.setDesc("Heading used in section mode (created at the bottom of the note when missing).")
+			.addText((t) =>
+				t
+					.setPlaceholder("Related notes")
+					.setValue(s.relatedSectionHeading)
+					.onChange(async (v) => {
+						s.relatedSectionHeading = v.trim() || "Related notes";
+						await this.plugin.saveSettings();
+					})
+			);
 
 		new Setting(containerEl)
 			.setName("Minimum title length")

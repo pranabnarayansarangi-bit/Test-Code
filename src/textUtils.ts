@@ -63,3 +63,24 @@ export function overlapsAny(start: number, end: number, ranges: Range[]): boolea
 	}
 	return false;
 }
+
+/**
+ * Append `lines` (already-joined bullet text) to the section under `heading`.
+ * The section is matched at any heading level; when absent, a `## heading`
+ * section is created at the bottom of the note.
+ */
+export function appendToSection(content: string, heading: string, lines: string): string {
+	const headingRe = new RegExp(`^#{1,6}\\s+${escapeRegExp(heading)}\\s*$`, "im");
+	const m = headingRe.exec(content);
+	if (!m) {
+		return content.replace(/\n+$/, "") + `\n\n## ${heading}\n\n${lines}\n`;
+	}
+	// Insert at the end of the existing section (before the next heading).
+	const afterHeading = m.index + m[0].length;
+	const rest = content.slice(afterHeading);
+	const nh = rest.search(/^#{1,6}\s/m);
+	const sectionEnd = nh === -1 ? content.length : afterHeading + nh;
+	const before = content.slice(0, sectionEnd).replace(/\n+$/, "");
+	const after = content.slice(sectionEnd);
+	return before + "\n" + lines + "\n" + (after ? "\n" + after : "");
+}
