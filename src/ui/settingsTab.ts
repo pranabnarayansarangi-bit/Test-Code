@@ -180,6 +180,7 @@ export class GraphDeclutterSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Case-sensitive matching")
+			.setDesc("Require exact case when matching note titles for auto-linking.")
 			.addToggle((t) =>
 				t.setValue(s.linkCaseSensitive).onChange(async (v) => {
 					s.linkCaseSensitive = v;
