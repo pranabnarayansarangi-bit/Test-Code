@@ -1,0 +1,14 @@
+{
+  "name": "gpt-mcp-codex",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local MCP connector exposing an ask_gpt tool backed by GPT-5.5 (xhigh) via the Codex CLI.",
+  "bin": {
+    "gpt-mcp-codex": "gpt-mcp-codex.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.23.8"
+  }
+}
