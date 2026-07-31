@@ -1,138 +1,125 @@
 # VidSoul — dragon clip failure: diagnosis and fix plan
 
-Written 2026-07-31. Captures the analysis of the dragon clip that failed, so it is not
-lost between sessions.
+Written 2026-07-31, revised the same day once the real stack was identified.
 
-**Status: diagnosis and recommendations only — none of this has been run.** The VidSoul
-codebase was not reachable from the session that produced this document, and the
-Higgsfield workspace available there was on a free plan with 0 credits and an empty
-generation history, so no test render was possible. Treat every parameter below as a
-starting point to verify, not a measured result.
-
-## The two confirmed failure modes
-
-1. **Character drift / morph** — the dragon is not the same dragon between shots (and
-   sometimes within a shot): scale, colour, anatomy and style all move.
-2. **Bad motion / physics** — warping geometry, wing motion that does not read as flight.
-
-These have different root causes and different fixes. Treating them as one "quality"
-problem and attacking it with better prose in the prompt is why the clip failed.
+**Status: diagnosis only — none of this has been run.** The pipeline lives on local
+Windows drives that the session producing this document could not reach, so every
+recommendation below is reasoned from the stack description, not measured. Verify before
+trusting.
 
 ---
 
-## Failure 1 — character drift
+## 0. The most urgent problem is not the dragon
 
-### Root cause
+At the time of writing, **the dragon pipeline has no version control**:
 
-Drift of this kind is the signature of a pipeline that generates **each shot
-independently from text**. Nothing carries identity from one shot to the next, so every
-shot re-invents the creature from the description. A text prompt is a lossy channel for
-identity: "a large red dragon with black horns" has an enormous space of valid renderings,
-and the model samples a different point in it every time.
+| Location | State |
+| --- | --- |
+| `E:\jcpl_avatar_studio\MF\dragons_last_trial\` | **No git at all.** Holds `dragon_manifest.py`, `dragon_assemble.py`, `test_render_neg.py`, repair-table edits. Only the disk protects them. |
+| `E:\jcpl_avatar_studio\video_tools\` | Git, local-only, **no remote**. 133 commits, branch `feat/gt002-acceptance-runner`, last commit `9c18947` (2026-07-26). |
+| `ltx23_train/audit/run_ltx.py` + engine changes | **Uncommitted**, sitting on the feature branch. |
+| `D:\`, `D:\dragon_runs`, `E:\jcpl_avatar_studio` | Not repositories. |
 
-The corollary matters: **making the description more detailed does not fix this.** It
-narrows the space slightly and costs prompt budget that should be spent on action and
-camera. The fix has to carry identity as *pixels*, not as words.
+This is the actual explanation for days of lost work and vanished models — not any single
+bad render. Fix it first; it costs two minutes:
+
+```bash
+cd E:\jcpl_avatar_studio\video_tools
+git add -A && git commit -m "WIP: --neg flag on run_ltx, engine-side changes"
+
+cd E:\jcpl_avatar_studio\MF\dragons_last_trial
+git init && git add -A && git commit -m "Dragon pipeline: manifest, assemble, neg-render test, repair table"
+```
+
+Before adding a remote, check the history size — if model weights were ever committed,
+the push will fail:
+
+```bash
+git count-objects -vH        # size-pack over ~1 GB means weights are in history
+```
+
+Keep `*.safetensors`, `*.ckpt`, `*.pt` and render outputs in `.gitignore`; weights belong
+on the Hugging Face Hub, which already holds `pranab_v1.safetensors` in
+`Pramaan/jcpl-loras` (private) and `Pramaan/pranab-flux-lora-public`.
+
+---
+
+## 1. The actual stack
+
+Inferred from `ltx23_train`, `run_ltx.py`, and the commit *"Flip film keyframe default
+klein → flux2"*:
+
+```
+  shot description
+        │
+        ▼
+  FLUX keyframe (flux2)  ──►  keyframe image per shot
+        │
+        ▼
+  LTX-Video (ltx23)      ──►  animated clip from that keyframe
+        │
+        ▼
+  dragon_assemble.py     ──►  final film
+```
+
+This is **local and keyframe-driven**, not hosted text-to-video. That distinction changes
+the diagnosis, and it invalidates the first draft of this document, which recommended
+Seedance / Wan / Kling. Those are Higgsfield-hosted models and are only relevant if the
+production ever moves off local inference.
+
+## 2. Where the drift actually originates
+
+An earlier draft assumed shots were generated straight from text. They are not — there is
+already a keyframe stage. So the useful question is *which* stage loses identity, and the
+architecture answers it:
+
+> **If each FLUX keyframe is generated independently from a text prompt, every keyframe is
+> a different dragon — and LTX then animates each different dragon faithfully.**
+
+The video model is likely not the culprit. It is doing its job on inconsistent input.
+This is worth confirming before changing anything: **lay the raw FLUX keyframes side by
+side.** If the dragon differs across them, the bug is upstream of LTX entirely, and no
+amount of LTX tuning will fix it.
 
 ### Fix, in order of impact
 
-1. **Lock the character once, before any video is generated.** Produce a canonical
-   multi-view reference set and treat it as the single source of truth for the whole film.
-   The `character-sheet` workflow in the Higgsfield bundle exists for exactly this
-   (turnarounds, expression sheets, consistent multi-view).
+1. **Train a dragon LoRA.** This is the strongest identity lock available and the
+   capability is already in hand — `pranab_v1.safetensors` proves the FLUX LoRA training
+   path works. A character LoRA makes the dragon reproducible across every keyframe by
+   construction, which no prompt can achieve.
+2. **Failing that, condition keyframes on a reference image** — FLUX Redux / IP-Adapter
+   style — so keyframe N+1 inherits keyframe N's appearance instead of resampling it.
+3. **Freeze the seed and the full prompt prefix** across keyframes of the same character.
+   Weakest of the three and it will not survive pose changes, but it is nearly free.
+4. **Chain within a scene**: last frame out of LTX becomes the next shot's init image, so
+   continuity holds across cuts meant to be continuous.
+5. **Log unresolved character references.** If `dragon_manifest.py` maps a script mention
+   to a character asset and the lookup can silently miss, a missed match means a keyframe
+   generated with no reference at all — which presents as intermittent, hard-to-reproduce
+   drift.
 
-2. **Use a reference-driven video model.** This is the single highest-impact change.
-   Models that accept reference images and are built for identity retention:
+## 3. Motion and physics
 
-   | Model | Reference inputs | Notes |
-   | --- | --- | --- |
-   | `seedance_2_0` | `start_image`, `end_image`, `image_references`, `video_references` | Tagged *reference / identity / consistent*. 4–15s, up to 4k. Best default here. |
-   | `wan2_7` | `start_image`, `end_image` | Tagged *character / consistent*. 2–15s. |
-   | `minimax_h3` | `start_image`, `end_image`, `image_references` | Multimodal keyframes, 2K. |
-   | `kling3_0` | `start_image`, `end_image` | Tagged *multi-shot*, motion transfer. |
+Separate problem, separate fix. Dragons are close to a worst case for video models: wings
+are large articulated surfaces with no rigid-body prior, so models default to rendering
+them as **morphing cloth**. Attack it structurally, not by prompting.
 
-   Plain text-to-video will drift no matter how good the prompt is.
+1. **Shorter shots.** Warping compounds with duration. Several 4–6s shots beat one long
+   take, and cutting more is free.
+2. **Bracket the motion with both endpoints.** If the LTX path supports an end keyframe as
+   well as a start, supplying both turns "invent a flight cycle" into interpolation
+   between two poses that were chosen deliberately. Strongest single lever for wings.
+3. **Use the `--neg` flag** that was just added to `run_ltx.py`. Negative prompts targeting
+   the actual artefacts — *melting, morphing, extra limbs, deformed wings, warping* — are
+   well matched to this failure. This is the cheapest experiment available and it is
+   already wired up.
+4. **Choose shots the model can win.** Wides for flight, where wing detail is small on
+   screen and error is less visible; tighter shots for held poses and roars. **Mid-shots
+   with full wing articulation are the worst case** — replace them with a cutaway.
 
-3. **Chain continuity inside a scene.** Take the last frame of shot N and pass it as
-   `start_image` of shot N+1. This keeps identity *and* staging continuous across a cut
-   that is meant to be continuous.
+## 4. Open questions
 
-4. **Stop re-describing the dragon mid-film.** Once a reference is attached, the prompt
-   should carry only **action and camera**. Re-describing the creature invites the model
-   to reconcile two sources of truth, and it will sometimes pick the words over the image.
-
----
-
-## Failure 2 — motion and physics
-
-### Root cause
-
-Dragons are close to a worst case for current video models. Wings are large articulated
-surfaces with no rigid-body prior, so models default to treating them as **morphing
-cloth** — which is exactly the "melting" look. This is a subject-difficulty problem, not
-purely a model-quality problem, and it is attacked structurally rather than by prompting.
-
-### Fix, in order of impact
-
-1. **Shorter shots.** Warping and drift both compound with duration. Several 4–6s shots
-   beat one 15s shot, and cutting more is free. If a shot has to be long, it should be one
-   where the dragon is *not* mid-articulation.
-
-2. **Bracket the motion with `start_image` and `end_image`.** Giving the model both
-   endpoints turns an open-ended generation ("invent a flight cycle") into an
-   interpolation between two poses that were chosen deliberately. This is the strongest
-   single lever for wing motion.
-
-3. **Use `motion_control` (motion transfer)** if any reference footage of a flight cycle
-   or comparable creature movement is available. Transferred motion is physically
-   plausible by construction; generated motion is not.
-
-4. **Choose shots the model can win.** Wides for flight (wing detail is small on screen,
-   so error is less visible); tighter shots for held poses, roars, dialogue. **Mid-shots
-   with full wing articulation are the worst case** and should be avoided or replaced with
-   a cutaway.
-
-5. **Set the `genre` hint** (`epic` / `action`) on `seedance_2_0` or
-   `cinematic_studio_3_0` rather than encoding tone in prose.
-
----
-
-## Suggested pipeline shape
-
-Two stages, because identity and assembly are separate problems:
-
-```
-Stage 1 — IDENTITY LOCK  (runs once per production)
-  character brief
-    └─► character-sheet workflow ──► canonical reference set  ◄── frozen, version-controlled
-                                     (multi-view, expressions)
-
-Stage 2 — PER SHOT  (runs per shot, reads the frozen reference)
-  shot description (action + camera only)
-    ├─► reference set ─────────────┐
-    ├─► start_image (prev last frame, or a keyframe)
-    ├─► end_image   (target pose)  ├─► seedance_2_0 ──► 4–6s clip
-    └─► genre hint ────────────────┘
-                                    └─► assemble in order
-```
-
-The `faceless-channel-video` workflow is worth reading as the assembly layer: it locks a
-style plus reusable assets, scripts across one continuous voiceover, and ships one
-finished video, explicitly supporting animated fairy-tale/myth. It is closer to a film
-spine than its name suggests.
-
-## Where a fuzzy name-matcher could fit (low priority)
-
-If VidSoul resolves characters from a script, a script that says "the dragon", "Ember",
-and "the great wyrm" must resolve to **one** locked reference. A canonical-key matcher
-(fold case/punctuation/accents, singularise, then compare) handles that. This matters only
-because a *failed* match may silently generate a shot with no reference attached — which
-presents as drift. Worth checking whether the pipeline logs unmatched character mentions;
-silent fallback to text-only generation would explain intermittent drift.
-
-## Open questions to resolve before implementing
-
-- Where does VidSoul live, and what does its current shot loop actually call?
-- Is it text-to-video per shot today, or already passing references?
-- What was the exact prompt and model for the dragon clip?
-- Does it log when a character mention fails to resolve to a reference asset?
+- Are the FLUX keyframes for one character visibly the same dragon? (Decides everything above.)
+- Does `run_ltx.py` accept an end keyframe, or only a start image?
+- Does `dragon_manifest.py` log a miss when a character mention resolves to no asset?
+- What were the exact prompt, seed and model for the failing dragon clip?
