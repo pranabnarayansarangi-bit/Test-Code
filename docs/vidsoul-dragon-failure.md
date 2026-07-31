@@ -9,37 +9,35 @@ trusting.
 
 ---
 
-## 0. The most urgent problem is not the dragon
+## 0. Version control — resolved, with one correction
 
-At the time of writing, **the dragon pipeline has no version control**:
+An earlier report stated that `MF\dragons_last_trial\` had **no version control at all**.
+**That was wrong.** Verified on 2026-07-31: it is an existing git repository on branch
+`master` with a clean working tree. The alarm was false.
+
+Current, verified state:
 
 | Location | State |
 | --- | --- |
-| `E:\jcpl_avatar_studio\MF\dragons_last_trial\` | **No git at all.** Holds `dragon_manifest.py`, `dragon_assemble.py`, `test_render_neg.py`, repair-table edits. Only the disk protects them. |
-| `E:\jcpl_avatar_studio\video_tools\` | Git, local-only, **no remote**. 133 commits, branch `feat/gt002-acceptance-runner`, last commit `9c18947` (2026-07-26). |
-| `ltx23_train/audit/run_ltx.py` + engine changes | **Uncommitted**, sitting on the feature branch. |
+| `E:\jcpl_avatar_studio\MF\dragons_last_trial\` | Git repo, branch `master`, working tree **clean**. |
+| `E:\jcpl_avatar_studio\video_tools\` | Git repo, branch `feat/gt002-acceptance-runner`, working tree **clean** after a WIP snapshot committed 20 files. **No remote configured** — 133+ commits exist on one disk. |
 | `D:\`, `D:\dragon_runs`, `E:\jcpl_avatar_studio` | Not repositories. |
 
-This is the actual explanation for days of lost work and vanished models — not any single
-bad render. Fix it first; it costs two minutes:
+The snapshot commit covered more than the earlier report suggested: not just
+`run_ltx.py`, but `ltx_engine.py`, `wan_engine.py`, `image_engine.py`,
+`extend_server.py`, `model_registry.py`, `ui.html`, the launchers, and ten untracked
+files including `identity_harness.py`, `regen_ref.py`, `look_audit.py` and
+`film_maker.py`.
+
+**The remaining exposure is the missing remote.** Before adding one, check whether model
+weights ever landed in history, or the push will fail on GitHub's 100 MB file limit:
 
 ```bash
-cd E:\jcpl_avatar_studio\video_tools
-git add -A && git commit -m "WIP: --neg flag on run_ltx, engine-side changes"
-
-cd E:\jcpl_avatar_studio\MF\dragons_last_trial
-git init && git add -A && git commit -m "Dragon pipeline: manifest, assemble, neg-render test, repair table"
+git count-objects -vH        # size-pack in the GB range means weights are in history
 ```
 
-Before adding a remote, check the history size — if model weights were ever committed,
-the push will fail:
-
-```bash
-git count-objects -vH        # size-pack over ~1 GB means weights are in history
-```
-
-Keep `*.safetensors`, `*.ckpt`, `*.pt` and render outputs in `.gitignore`; weights belong
-on the Hugging Face Hub, which already holds `pranab_v1.safetensors` in
+Keep `*.safetensors`, `*.ckpt`, `*.pt`, `*.bak-*` and render outputs in `.gitignore`.
+Weights belong on the Hugging Face Hub, which already holds `pranab_v1.safetensors` in
 `Pramaan/jcpl-loras` (private) and `Pramaan/pranab-flux-lora-public`.
 
 ---
