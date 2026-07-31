@@ -1,5 +1,12 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type GraphDeclutterPlugin from "../../main";
+import {
+	FUZZY_MAX_EDITS,
+	FUZZY_MIN_TITLE_LENGTH,
+	FUZZY_THRESHOLD_MAX,
+	FUZZY_THRESHOLD_MIN,
+	clampFuzzyThreshold,
+} from "../settings";
 
 export class GraphDeclutterSettingTab extends PluginSettingTab {
 	constructor(app: App, private plugin: GraphDeclutterPlugin) {
@@ -209,5 +216,46 @@ export class GraphDeclutterSettingTab extends PluginSettingTab {
 					}
 				})
 			);
+
+		containerEl.createEl("h3", { text: "Fuzzy edge discovery" });
+
+		new Setting(containerEl)
+			.setName("Fuzzy title matching")
+			.setDesc(
+				"After the exact pass, also match mentions that differ in casing, " +
+					"punctuation, accents or plurals — and, below a similarity of 1, " +
+					`typos of up to ${FUZZY_MAX_EDITS} characters. Titles shorter than ` +
+					`${FUZZY_MIN_TITLE_LENGTH} characters are never matched this way. ` +
+					"Fuzzy matches are always whole-word and always case-insensitive, " +
+					"and they start unchecked in the review list."
+			)
+			.addToggle((t) =>
+				t.setValue(s.linkFuzzy).onChange(async (v) => {
+					s.linkFuzzy = v;
+					await this.plugin.saveSettings();
+					this.display();
+				})
+			);
+
+		if (s.linkFuzzy) {
+			new Setting(containerEl)
+				.setName("Similarity threshold")
+				.setDesc(
+					`How close a mention must be, from ${FUZZY_THRESHOLD_MIN} to ` +
+						`${FUZZY_THRESHOLD_MAX}. At ${FUZZY_THRESHOLD_MAX} only ` +
+						"casing/punctuation/accent/plural variants match; lower values " +
+						"start admitting misspellings."
+				)
+				.addSlider((sl) =>
+					sl
+						.setLimits(FUZZY_THRESHOLD_MIN, FUZZY_THRESHOLD_MAX, 0.01)
+						.setValue(clampFuzzyThreshold(s.linkFuzzyThreshold))
+						.setDynamicTooltip()
+						.onChange(async (v) => {
+							s.linkFuzzyThreshold = clampFuzzyThreshold(v);
+							await this.plugin.saveSettings();
+						})
+				);
+		}
 	}
 }

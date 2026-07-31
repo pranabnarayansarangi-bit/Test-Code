@@ -5,6 +5,8 @@ export interface ReportItem {
 	title: string;
 	/** Secondary detail (e.g. reasons, matched context). */
 	detail: string;
+	/** Optional short tag rendered beside the title (e.g. match confidence). */
+	badge?: string;
 	/** Whether the checkbox starts checked. */
 	checked: boolean;
 }
@@ -21,6 +23,8 @@ export class ReportModal extends Modal {
 		private opts: {
 			heading: string;
 			emptyText: string;
+			/** Optional line shown under the heading, before the list. */
+			note?: string;
 			actionLabel: string;
 			items: ReportItem[];
 			onConfirm: (indices: number[]) => Promise<void>;
@@ -44,6 +48,10 @@ export class ReportModal extends Modal {
 			return;
 		}
 
+		if (this.opts.note) {
+			contentEl.createEl("p", { text: this.opts.note, cls: "graph-declutter-note" });
+		}
+
 		const controls = contentEl.createDiv({ cls: "graph-declutter-controls" });
 		controls.createSpan({
 			text: `${this.opts.items.length} item(s) found.`,
@@ -60,7 +68,11 @@ export class ReportModal extends Modal {
 			checkboxes.push(cb);
 
 			const text = row.createDiv({ cls: "graph-declutter-text" });
-			text.createDiv({ cls: "graph-declutter-title", text: item.title });
+			const title = text.createDiv({ cls: "graph-declutter-title" });
+			title.createSpan({ text: item.title });
+			if (item.badge) {
+				title.createSpan({ cls: "graph-declutter-badge", text: item.badge });
+			}
 			text.createDiv({ cls: "graph-declutter-detail", text: item.detail });
 		});
 

@@ -38,6 +38,43 @@ export interface GraphDeclutterSettings {
 	linkMaxPerNote: number;
 	/** Also match a note's frontmatter aliases, not just its title. */
 	linkUseAliases: boolean;
+
+	// --- Fuzzy edge discovery ---
+	/**
+	 * After the literal pass, also match near-misses: differences in casing,
+	 * punctuation, accents and plurals, plus outright typos.
+	 */
+	linkFuzzy: boolean;
+	/**
+	 * How close a near-miss has to be, from 0.5 to 1. At 1 only the
+	 * casing/punctuation/accent/plural variants match; lower values start
+	 * admitting misspellings.
+	 */
+	linkFuzzyThreshold: number;
+}
+
+/** Bounds for `linkFuzzyThreshold`; much below 0.7 a match means almost nothing. */
+export const FUZZY_THRESHOLD_MIN = 0.7;
+export const FUZZY_THRESHOLD_MAX = 1;
+
+/**
+ * Hard ceiling on how many edits separate a mention from a title, whatever the
+ * threshold would otherwise allow on a long one. Past a few characters a "near
+ * miss" is a different phrase rather than a misspelling, and the cap is also
+ * what stops a large vault's scan from degenerating.
+ */
+export const FUZZY_MAX_EDITS = 3;
+
+/**
+ * Fuzzy matching never applies to titles shorter than this, whatever
+ * `linkMinTitleLength` says — short words sit within one edit of far too many
+ * unrelated short words.
+ */
+export const FUZZY_MIN_TITLE_LENGTH = 5;
+
+export function clampFuzzyThreshold(value: number): number {
+	if (!Number.isFinite(value)) return DEFAULT_SETTINGS.linkFuzzyThreshold;
+	return Math.min(FUZZY_THRESHOLD_MAX, Math.max(FUZZY_THRESHOLD_MIN, value));
 }
 
 export const DEFAULT_SETTINGS: GraphDeclutterSettings = {
@@ -64,4 +101,8 @@ export const DEFAULT_SETTINGS: GraphDeclutterSettings = {
 	linkCaseSensitive: false,
 	linkMaxPerNote: 20,
 	linkUseAliases: true,
+
+	// Off by default: approximate matches need a human eye, so opt in.
+	linkFuzzy: false,
+	linkFuzzyThreshold: 0.85,
 };

@@ -80,12 +80,20 @@ export default class GraphDeclutterPlugin extends Plugin {
 		const items: ReportItem[] = suggestions.map((s) => ({
 			title: `${s.file.path}  →  [[${s.target}]]`,
 			detail: `line ${s.line}: ${s.context}`,
-			checked: true,
+			// Approximate matches are guesses, so make the user opt into each one
+			// rather than trusting a "select all" they may not have read.
+			badge: s.fuzzy ? `fuzzy ${Math.round(s.similarity * 100)}%` : undefined,
+			checked: !s.fuzzy,
 		}));
+
+		const fuzzyCount = suggestions.filter((s) => s.fuzzy).length;
 
 		new ReportModal(this.app, {
 			heading: "Missing links (edges)",
 			emptyText: "No missing links found.",
+			note: fuzzyCount
+				? `${fuzzyCount} approximate match(es) start unchecked — review each before inserting.`
+				: undefined,
 			actionLabel: "Insert selected links",
 			items,
 			onConfirm: async (indices) => {

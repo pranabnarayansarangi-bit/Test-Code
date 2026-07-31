@@ -29,6 +29,31 @@ that aren't yet linked, and proposes turning the first mention into a
 `[[wikilink]]`. Code blocks, existing links, and URLs are never touched. You
 review each proposed edge with context and choose which to insert.
 
+### 3. Fuzzy title matching (opt-in)
+A literal scan only finds a title spelled exactly as the note names it, so a
+note called `Neural Network` stays unlinked from every mention of *neural
+networks*. Turn on **fuzzy title matching** and a second pass catches mentions
+that differ by:
+
+- **casing and punctuation** — `machine-learning` → `[[Machine Learning]]`
+- **accents** — `cafe culture` → `[[Café Culture]]`
+- **plurals** — `neural networks` → `[[Neural Network]]`
+- **typos** — `Kubernets` → `[[Kubernetes]]`, up to 3 characters' difference
+
+The literal pass always runs first and claims its matches, so an approximate
+match can only ever fill a gap the exact pass left behind. Matches are inserted
+as `[[Neural Network|neural networks]]`, keeping your prose exactly as written.
+
+Because these are guesses, they are labelled with a confidence percentage and
+**start unchecked** in the review list — "select all" will not sweep them in.
+Titles under 5 characters are never matched this way, and matching is always
+whole-word.
+
+The **similarity threshold** controls how far a mention may stray. At `1` only
+the casing/punctuation/accent/plural variants match and the pass is essentially
+free; lower it to admit misspellings, at some cost in scan time and in false
+positives to review.
+
 ## Commands
 
 - **Find clutter & spam nodes (review, then trash)**
@@ -40,9 +65,9 @@ ribbon button (broom icon) for the declutter scan.
 ## Settings
 
 Configure the trash folder, which clutter/spam checks run and their thresholds,
-protected tags (e.g. `keep`) and ignored folders, and the edge-discovery rules
+protected tags (e.g. `keep`) and ignored folders, the edge-discovery rules
 (minimum title length, whole-word / case-sensitive matching, aliases, and a cap
-on new links per note).
+on new links per note), and fuzzy matching with its similarity threshold.
 
 ## Development
 
@@ -50,6 +75,7 @@ on new links per note).
 npm install
 npm run build     # typecheck + bundle to main.js
 npm run dev       # watch mode
+npm test          # run the unit tests
 ```
 
 To try it in a vault, copy `main.js`, `manifest.json`, and `styles.css` into
@@ -61,3 +87,5 @@ To try it in a vault, copy `main.js`, `manifest.json`, and `styles.css` into
 - Orphan flagging is **off by default** because orphans are frequently intentional.
 - Edge discovery adds **one** link per note pair (the first mention) to avoid
   re-cluttering, and skips code, URLs, and existing links.
+- Fuzzy matching is **off by default**, and its suggestions start unchecked —
+  an approximate match is a guess and is meant to be read before it is accepted.
