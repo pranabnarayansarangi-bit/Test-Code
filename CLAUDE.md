@@ -11,7 +11,7 @@ Company details (as they appear on the letterhead):
 
 - **Company:** Jagannath Corporation Projects Pvt. Ltd. (JCPPL)
 - **Address:** Plot 397, Lewis Road, Sarangi Bhawan (Ground Floor), Old Town, Bhubaneswar-751002, Odisha
-- **Phone:** +91-7894444400
+- **Phone:** +91-7894444415
 - **Email:** info@jcltd.in
 - **CIN:** U27100OR2010PTC011664
 
