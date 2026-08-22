@@ -19,7 +19,7 @@ The letterhead sits in the page **header** of `JCPPL_letterhead.docx`
 
 1. Copy `JCPPL_letterhead.docx` to the new document name.
 2. Add body content (edit `word/document.xml`, or open in Word and type).
-3. Leave the header parts and `word/media/image1.png` untouched.
+3. Leave the header parts and the logo image in `word/media/` untouched.
 
 ## About the design
 
