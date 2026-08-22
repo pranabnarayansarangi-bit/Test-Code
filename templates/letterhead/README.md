@@ -27,12 +27,13 @@ The letterhead sits in the page **header** of `JCPPL_letterhead.docx`
 (the original `.doc` is retained unchanged as the reference; an exact
 replica of its layout exists in git history):
 
-- First page: logo at top left, company name and address block
-  right-aligned beside it, a brand-green rule underneath spanning the full
-  text width. Continuation pages (2+) are blank.
-- Company name in Cambria Bold 17 pt, brand green (`#00B050`); address and
-  contact lines in Cambria 9.5 pt; CIN in 8.5 pt. Cambria ships with
-  Microsoft Office, so the template renders the same everywhere.
+- First page: logo at top left, company name right-aligned beside it, and
+  the full details on exactly two right-aligned lines underneath (address
+  on one line; phone · email · CIN on the other). Continuation pages (2+)
+  are blank.
+- Company name in Cambria Bold 17 pt, brand green (`#00B050`); detail
+  lines in Cambria 9.5 pt. Cambria ships with Microsoft Office, so the
+  template renders the same everywhere.
 - Layout is a fixed-width borderless table — no manual-space alignment, so
   it cannot fall apart under font substitution.
 - A4 page, 1" side margins, body font Cambria 11 pt.
