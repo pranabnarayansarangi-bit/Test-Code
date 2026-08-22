@@ -8,7 +8,7 @@ must be created on this letterhead — see the rule in the repository root
 | File | Purpose |
 |---|---|
 | `JCPPL_letterhead.doc` | Original letterhead as supplied by the company (Word 97-2003). Do not edit — kept as the reference copy. |
-| `JCPPL_letterhead.docx` | Working template in modern Word format, converted from the original with the header rebuilt for robust alignment. **Start new documents from this file.** |
+| `JCPPL_letterhead.docx` | Professionally redesigned letterhead template. **Start new documents from this file.** |
 | `JCPPL_letterhead_preview.pdf` | Rendered preview of the letterhead for quick visual reference. |
 | `jcppl_logo.png` | Company logo extracted from the letterhead, corrected to true display proportions (528×443). Use for HTML/PDF/slide outputs. |
 
@@ -19,30 +19,29 @@ The letterhead sits in the page **header** of `JCPPL_letterhead.docx`
 
 1. Copy `JCPPL_letterhead.docx` to the new document name.
 2. Add body content (edit `word/document.xml`, or open in Word and type).
-3. Leave the header parts and `word/media/image1.png` untouched.
+3. Leave the header parts and the logo image in `word/media/` untouched.
 
-## How the .docx differs from the original .doc
+## About the design
 
-The `.docx` reproduces the company's reference letterhead exactly (title
-and address positions verified within 1–2 pt against the company's own PDF
-export), but is structurally robust where the original was fragile:
+`JCPPL_letterhead.docx` is a clean redesign of the original letterhead
+(the original `.doc` is retained unchanged as the reference; an exact
+replica of its layout exists in git history):
 
-- The original aligned the address block with long runs of literal space
-  characters, which broke on any machine without the exact fonts. The
-  company name and each address line are now separate paragraphs with
-  fixed indents inside the header's layout table, so alignment holds under
-  font substitution. All text is verbatim from the original.
-- The company name is set in Times New Roman Bold — the font the letterhead
-  actually prints in. (The original nominally asked for "Garamond Premr
-  Pro", a font not installed even on the company's own computer, so Word
-  has always silently substituted Times New Roman.)
-- The continuation-page (page 2+) header contained leftover text from an
-  unrelated company ("Jagannath Crushers") hidden in the original file;
-  it is now blank, so multi-page documents get a clean second page.
+- First page: logo at the far top left (0.6" from the page edge), the
+  company name in large type starting right next to it, and the full
+  details on exactly two smaller lines directly under the name (address on
+  one line; phone · email · CIN on the other). Continuation pages (2+)
+  are blank.
+- Company name in Cambria Bold 20 pt, brand green (`#00B050`); detail
+  lines in Cambria 8.5 pt. Cambria ships with Microsoft Office, so the
+  template renders the same everywhere.
+- Layout is a fixed-width borderless table — no manual-space alignment, so
+  it cannot fall apart under font substitution.
+- A4 page, 1" side margins, body font Cambria 11 pt.
 
 ## Company details
 
 - Jagannath Corporation Projects Pvt. Ltd.
 - Plot 397, Lewis Road, Sarangi Bhawan (Ground Floor), Old Town, Bhubaneswar-751002, Odisha
-- Phone: +91-7894444400 · Email: info@jcltd.in
+- Phone: +91-7894444415 · Email: info@jcltd.in
 - CIN: U27100OR2010PTC011664
