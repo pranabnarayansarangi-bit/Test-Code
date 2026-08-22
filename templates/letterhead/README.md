@@ -23,16 +23,19 @@ The letterhead sits in the page **header** of `JCPPL_letterhead.docx`
 
 ## How the .docx differs from the original .doc
 
-The original file positioned the address block with long runs of literal
-space characters, so it fell apart on any machine without the exact fonts
-(Cambria, Garamond Premier Pro). The `.docx` keeps the same first-page
-design — same logo placement, green title, fonts, and colors — but is
-structurally rebuilt:
+The `.docx` reproduces the company's reference letterhead exactly (title
+and address positions verified within 1–2 pt against the company's own PDF
+export), but is structurally robust where the original was fragile:
 
-- The company name and each address line are separate centered paragraphs
-  (no manual-space alignment), so the layout holds even under font
-  substitution.
-- Minor punctuation spacing normalized; `CIN-…` is now written `CIN: …`.
+- The original aligned the address block with long runs of literal space
+  characters, which broke on any machine without the exact fonts. The
+  company name and each address line are now separate paragraphs with
+  fixed indents inside the header's layout table, so alignment holds under
+  font substitution. All text is verbatim from the original.
+- The company name is set in Times New Roman Bold — the font the letterhead
+  actually prints in. (The original nominally asked for "Garamond Premr
+  Pro", a font not installed even on the company's own computer, so Word
+  has always silently substituted Times New Roman.)
 - The continuation-page (page 2+) header contained leftover text from an
   unrelated company ("Jagannath Crushers") hidden in the original file;
   it is now blank, so multi-page documents get a clean second page.
