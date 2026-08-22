@@ -28,3 +28,11 @@ Company details (as they appear on the letterhead):
   compare rendered output against it.
 
 See `templates/letterhead/README.md` for file-by-file details.
+
+## Secrets and credentials
+
+Real credentials (such as the display computer's administrator login) are
+never committed to this repository. `.env.example` documents the expected
+variables; the real values go into a local `.env` copy, which is
+git-ignored. Never write actual usernames, passwords, tokens, or keys into
+tracked files.

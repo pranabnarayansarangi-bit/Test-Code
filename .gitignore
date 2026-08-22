@@ -2,3 +2,8 @@ node_modules/
 main.js
 *.js.map
 .DS_Store
+
+# Secrets — real credentials live only in local .env files, never in git
+.env
+.env.*
+!.env.example
